@@ -1,5 +1,24 @@
 {
-    "wake.compiler.solc.remappings": [
-        "forge-std/=lib/forge-std/src/"
-    ]
+  // --- Wake (preferred for Foundry projects) ---
+  "wake.compiler.solc.remappings": [
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+    "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+    "forge-std/=lib/forge-std/src/",
+    "halmos-cheatcodes/=lib/openzeppelin-contracts/lib/halmos-cheatcodes/src/",
+    "openzeppelin-contracts/=lib/openzeppelin-contracts/"
+  ],
+
+  // --- Juan Blanco Solidity extension (if you have it installed) ---
+  "solidity.packageDefaultDependenciesDirectory": "lib",
+  "solidity.packageDefaultDependenciesContractsDirectory": "",
+  "solidity.remappings": [
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+    "forge-std/=lib/forge-std/src/",
+    "ds-test/=lib/openzeppelin-contracts/lib/forge-std/lib/ds-test/src/",
+    "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+    "openzeppelin-contracts/=lib/openzeppelin-contracts/"
+  ],
+  "solidity.defaultCompiler": "local",
+  "solidity.compileUsingRemoteVersion": "v0.8.24",
+  "solidity.validationDelay": 1500
 }

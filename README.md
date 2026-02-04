@@ -64,3 +64,15 @@ $ forge --help
 $ anvil --help
 $ cast --help
 ```
+
+## Standards Used
+
+[EIP-20 (ERC-20)](https://eips.ethereum.org/EIPS/eip-20) defines the baseline fungible token interface (balances, transfers, allowances). BLEND implements ERC-20 to integrate cleanly with wallets, exchanges, and on-chain protocols.
+
+[EIP-2612](https://eips.ethereum.org/EIPS/eip-2612) adds `permit` approvals via signatures, allowing gasless allowance updates and smoother UX in dApps.
+
+[EIP-3009](https://eips.ethereum.org/EIPS/eip-3009) defines gasless token transfers using authorizations (`transferWithAuthorization`, `receiveWithAuthorization`, `cancelAuthorization`) which BLEND uses for x402-style payments.
+
+[EIP-712](https://eips.ethereum.org/EIPS/eip-712) specifies typed structured data signing; BLEND uses it for both EIP-2612 permits and EIP-3009 authorizations.
+
+[EIP-1271](https://eips.ethereum.org/EIPS/eip-1271) standardizes signature validation for smart-contract wallets; BLEND uses it to accept EIP-3009 authorizations from contract accounts.
