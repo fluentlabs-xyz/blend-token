@@ -6,29 +6,21 @@ import {Test, StdInvariant} from "forge-std/Test.sol";
 import {BlendToken} from "../src/BlendToken.sol";
 import {IEIP3009} from "../src/interfaces/IEIP3009.sol";
 
-import {
-    IAccessControl
-} from "@openzeppelin/contracts/access/IAccessControl.sol";
+import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
-import {
-    ERC20Permit
-} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 
 contract BlendTokenTest is Test {
     bytes32 private constant PERMIT_TYPEHASH =
-        keccak256(
-            "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-        );
+        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
-    bytes32 private constant TRANSFER_WITH_AUTHORIZATION_TYPEHASH =
-        keccak256(
-            "TransferWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
-        );
+    bytes32 private constant TRANSFER_WITH_AUTHORIZATION_TYPEHASH = keccak256(
+        "TransferWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
+    );
 
-    bytes32 private constant RECEIVE_WITH_AUTHORIZATION_TYPEHASH =
-        keccak256(
-            "ReceiveWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
-        );
+    bytes32 private constant RECEIVE_WITH_AUTHORIZATION_TYPEHASH = keccak256(
+        "ReceiveWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
+    );
 
     bytes32 private constant CANCEL_AUTHORIZATION_TYPEHASH =
         keccak256("CancelAuthorization(address authorizer,bytes32 nonce)");
@@ -65,33 +57,19 @@ contract BlendTokenTest is Test {
         assertEq(token.totalSupply(), CAP);
 
         vm.prank(minter);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                BlendToken.CapExceeded.selector,
-                CAP,
-                CAP + 1
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(BlendToken.CapExceeded.selector, CAP, CAP + 1));
         token.mint(user, 1);
     }
 
     function testRolePermissions() public {
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                user,
-                token.MINTER_ROLE()
-            )
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, user, token.MINTER_ROLE())
         );
         vm.prank(user);
         token.mint(user, 1);
 
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                user,
-                token.PAUSER_ROLE()
-            )
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, user, token.PAUSER_ROLE())
         );
         vm.prank(user);
         token.pause();
@@ -113,13 +91,7 @@ contract BlendTokenTest is Test {
         token.approve(spender, 1e18);
 
         uint256 deadline = block.timestamp + 1 days;
-        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
-            userPk,
-            user,
-            spender,
-            1e18,
-            deadline
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signPermit(userPk, user, spender, 1e18, deadline);
         vm.expectRevert(Pausable.EnforcedPause.selector);
         token.permit(user, spender, 1e18, deadline, v, r, s);
     }
@@ -137,13 +109,7 @@ contract BlendTokenTest is Test {
 
     function testPermitHappyPath() public {
         uint256 deadline = block.timestamp + 1 days;
-        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
-            userPk,
-            user,
-            spender,
-            10e18,
-            deadline
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signPermit(userPk, user, spender, 10e18, deadline);
 
         token.permit(user, spender, 10e18, deadline, v, r, s);
         assertEq(token.allowance(user, spender), 10e18);
@@ -151,40 +117,17 @@ contract BlendTokenTest is Test {
 
     function testPermitInvalidSignature() public {
         uint256 deadline = block.timestamp + 1 days;
-        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
-            spenderPk,
-            user,
-            spender,
-            10e18,
-            deadline
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signPermit(spenderPk, user, spender, 10e18, deadline);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ERC20Permit.ERC2612InvalidSigner.selector,
-                vm.addr(spenderPk),
-                user
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(ERC20Permit.ERC2612InvalidSigner.selector, vm.addr(spenderPk), user));
         token.permit(user, spender, 10e18, deadline, v, r, s);
     }
 
     function testPermitExpired() public {
         uint256 deadline = block.timestamp - 1;
-        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
-            userPk,
-            user,
-            spender,
-            10e18,
-            deadline
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signPermit(userPk, user, spender, 10e18, deadline);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ERC20Permit.ERC2612ExpiredSignature.selector,
-                deadline
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(ERC20Permit.ERC2612ExpiredSignature.selector, deadline));
         token.permit(user, spender, 10e18, deadline, v, r, s);
     }
 
@@ -196,27 +139,10 @@ contract BlendTokenTest is Test {
         uint256 validAfter = block.timestamp - 1;
         uint256 validBefore = block.timestamp + 1 days;
 
-        (uint8 v, bytes32 r, bytes32 s) = _signTransferAuth(
-            userPk,
-            user,
-            spender,
-            25e18,
-            validAfter,
-            validBefore,
-            nonce
-        );
+        (uint8 v, bytes32 r, bytes32 s) =
+            _signTransferAuth(userPk, user, spender, 25e18, validAfter, validBefore, nonce);
 
-        token.transferWithAuthorization(
-            user,
-            spender,
-            25e18,
-            validAfter,
-            validBefore,
-            nonce,
-            v,
-            r,
-            s
-        );
+        token.transferWithAuthorization(user, spender, 25e18, validAfter, validBefore, nonce, v, r, s);
         assertEq(token.balanceOf(spender), 25e18);
         assertTrue(token.authorizationState(user, nonce));
     }
@@ -230,33 +156,11 @@ contract BlendTokenTest is Test {
         uint256 validAfter = block.timestamp - 1;
         uint256 validBefore = block.timestamp + 1 days;
 
-        (uint8 v, bytes32 r, bytes32 s) = _signTransferAuth(
-            userPk,
-            user,
-            address(receiver),
-            1e18,
-            validAfter,
-            validBefore,
-            nonce
-        );
+        (uint8 v, bytes32 r, bytes32 s) =
+            _signTransferAuth(userPk, user, address(receiver), 1e18, validAfter, validBefore, nonce);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                BlendToken.UnsafeRecipient.selector,
-                address(receiver)
-            )
-        );
-        token.transferWithAuthorization(
-            user,
-            address(receiver),
-            1e18,
-            validAfter,
-            validBefore,
-            nonce,
-            v,
-            r,
-            s
-        );
+        vm.expectRevert(abi.encodeWithSelector(BlendToken.UnsafeRecipient.selector, address(receiver)));
+        token.transferWithAuthorization(user, address(receiver), 1e18, validAfter, validBefore, nonce, v, r, s);
     }
 
     function testEIP1271Authorization() public {
@@ -270,15 +174,7 @@ contract BlendTokenTest is Test {
         uint256 validBefore = block.timestamp + 1 days;
 
         token.transferWithAuthorization(
-            address(wallet),
-            spender,
-            2e18,
-            validAfter,
-            validBefore,
-            nonce,
-            0,
-            bytes32(0),
-            bytes32(0)
+            address(wallet), spender, 2e18, validAfter, validBefore, nonce, 0, bytes32(0), bytes32(0)
         );
 
         assertEq(token.balanceOf(spender), 2e18);
@@ -292,48 +188,14 @@ contract BlendTokenTest is Test {
         uint256 validAfter = block.timestamp - 1;
         uint256 validBefore = block.timestamp + 1 days;
 
-        (uint8 v, bytes32 r, bytes32 s) = _signReceiveAuth(
-            userPk,
-            user,
-            spender,
-            10e18,
-            validAfter,
-            validBefore,
-            nonce
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signReceiveAuth(userPk, user, spender, 10e18, validAfter, validBefore, nonce);
 
         vm.prank(user);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                BlendToken.InvalidPayee.selector,
-                user,
-                spender
-            )
-        );
-        token.receiveWithAuthorization(
-            user,
-            spender,
-            10e18,
-            validAfter,
-            validBefore,
-            nonce,
-            v,
-            r,
-            s
-        );
+        vm.expectRevert(abi.encodeWithSelector(BlendToken.InvalidPayee.selector, user, spender));
+        token.receiveWithAuthorization(user, spender, 10e18, validAfter, validBefore, nonce, v, r, s);
 
         vm.prank(spender);
-        token.receiveWithAuthorization(
-            user,
-            spender,
-            10e18,
-            validAfter,
-            validBefore,
-            nonce,
-            v,
-            r,
-            s
-        );
+        token.receiveWithAuthorization(user, spender, 10e18, validAfter, validBefore, nonce, v, r, s);
         assertEq(token.balanceOf(spender), 10e18);
     }
 
@@ -345,42 +207,14 @@ contract BlendTokenTest is Test {
         uint256 validAfter = block.timestamp - 1;
         uint256 validBefore = block.timestamp + 1 days;
 
-        (uint8 vCancel, bytes32 rCancel, bytes32 sCancel) = _signCancelAuth(
-            userPk,
-            user,
-            nonce
-        );
+        (uint8 vCancel, bytes32 rCancel, bytes32 sCancel) = _signCancelAuth(userPk, user, nonce);
         token.cancelAuthorization(user, nonce, vCancel, rCancel, sCancel);
         assertTrue(token.authorizationState(user, nonce));
 
-        (uint8 v, bytes32 r, bytes32 s) = _signTransferAuth(
-            userPk,
-            user,
-            spender,
-            5e18,
-            validAfter,
-            validBefore,
-            nonce
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signTransferAuth(userPk, user, spender, 5e18, validAfter, validBefore, nonce);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                BlendToken.AuthorizationAlreadyUsed.selector,
-                user,
-                nonce
-            )
-        );
-        token.transferWithAuthorization(
-            user,
-            spender,
-            5e18,
-            validAfter,
-            validBefore,
-            nonce,
-            v,
-            r,
-            s
-        );
+        vm.expectRevert(abi.encodeWithSelector(BlendToken.AuthorizationAlreadyUsed.selector, user, nonce));
+        token.transferWithAuthorization(user, spender, 5e18, validAfter, validBefore, nonce, v, r, s);
     }
 
     function testReplayProtection() public {
@@ -391,46 +225,12 @@ contract BlendTokenTest is Test {
         uint256 validAfter = block.timestamp - 1;
         uint256 validBefore = block.timestamp + 1 days;
 
-        (uint8 v, bytes32 r, bytes32 s) = _signTransferAuth(
-            userPk,
-            user,
-            spender,
-            5e18,
-            validAfter,
-            validBefore,
-            nonce
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signTransferAuth(userPk, user, spender, 5e18, validAfter, validBefore, nonce);
 
-        token.transferWithAuthorization(
-            user,
-            spender,
-            5e18,
-            validAfter,
-            validBefore,
-            nonce,
-            v,
-            r,
-            s
-        );
+        token.transferWithAuthorization(user, spender, 5e18, validAfter, validBefore, nonce, v, r, s);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                BlendToken.AuthorizationAlreadyUsed.selector,
-                user,
-                nonce
-            )
-        );
-        token.transferWithAuthorization(
-            user,
-            spender,
-            5e18,
-            validAfter,
-            validBefore,
-            nonce,
-            v,
-            r,
-            s
-        );
+        vm.expectRevert(abi.encodeWithSelector(BlendToken.AuthorizationAlreadyUsed.selector, user, nonce));
+        token.transferWithAuthorization(user, spender, 5e18, validAfter, validBefore, nonce, v, r, s);
     }
 
     function testTimeBounds() public {
@@ -444,86 +244,29 @@ contract BlendTokenTest is Test {
         uint256 validAfter = block.timestamp + 100;
         uint256 validBefore = block.timestamp + 1 days;
 
-        (uint8 v, bytes32 r, bytes32 s) = _signTransferAuth(
-            userPk,
-            user,
-            spender,
-            5e18,
-            validAfter,
-            validBefore,
-            nonce
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signTransferAuth(userPk, user, spender, 5e18, validAfter, validBefore, nonce);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                BlendToken.AuthorizationNotYetValid.selector,
-                validAfter
-            )
-        );
-        token.transferWithAuthorization(
-            user,
-            spender,
-            5e18,
-            validAfter,
-            validBefore,
-            nonce,
-            v,
-            r,
-            s
-        );
+        vm.expectRevert(abi.encodeWithSelector(BlendToken.AuthorizationNotYetValid.selector, validAfter));
+        token.transferWithAuthorization(user, spender, 5e18, validAfter, validBefore, nonce, v, r, s);
 
         bytes32 nonce2 = keccak256("auth-6");
         uint256 expiredBefore = block.timestamp - 1;
 
-        (uint8 v2, bytes32 r2, bytes32 s2) = _signTransferAuth(
-            userPk,
-            user,
-            spender,
-            5e18,
-            block.timestamp - 2,
-            expiredBefore,
-            nonce2
-        );
+        (uint8 v2, bytes32 r2, bytes32 s2) =
+            _signTransferAuth(userPk, user, spender, 5e18, block.timestamp - 2, expiredBefore, nonce2);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                BlendToken.AuthorizationExpired.selector,
-                expiredBefore
-            )
-        );
-        token.transferWithAuthorization(
-            user,
-            spender,
-            5e18,
-            block.timestamp - 2,
-            expiredBefore,
-            nonce2,
-            v2,
-            r2,
-            s2
-        );
+        vm.expectRevert(abi.encodeWithSelector(BlendToken.AuthorizationExpired.selector, expiredBefore));
+        token.transferWithAuthorization(user, spender, 5e18, block.timestamp - 2, expiredBefore, nonce2, v2, r2, s2);
     }
 
-    function _signPermit(
-        uint256 signerPk,
-        address owner_,
-        address spender_,
-        uint256 value,
-        uint256 deadline
-    ) internal view returns (uint8 v, bytes32 r, bytes32 s) {
-        bytes32 structHash = keccak256(
-            abi.encode(
-                PERMIT_TYPEHASH,
-                owner_,
-                spender_,
-                value,
-                token.nonces(owner_),
-                deadline
-            )
-        );
-        bytes32 digest = keccak256(
-            abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash)
-        );
+    function _signPermit(uint256 signerPk, address owner_, address spender_, uint256 value, uint256 deadline)
+        internal
+        view
+        returns (uint8 v, bytes32 r, bytes32 s)
+    {
+        bytes32 structHash =
+            keccak256(abi.encode(PERMIT_TYPEHASH, owner_, spender_, value, token.nonces(owner_), deadline));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash));
         return vm.sign(signerPk, digest);
     }
 
@@ -537,19 +280,9 @@ contract BlendTokenTest is Test {
         bytes32 nonce
     ) internal view returns (uint8 v, bytes32 r, bytes32 s) {
         bytes32 structHash = keccak256(
-            abi.encode(
-                TRANSFER_WITH_AUTHORIZATION_TYPEHASH,
-                from,
-                to,
-                value,
-                validAfter,
-                validBefore,
-                nonce
-            )
+            abi.encode(TRANSFER_WITH_AUTHORIZATION_TYPEHASH, from, to, value, validAfter, validBefore, nonce)
         );
-        bytes32 digest = keccak256(
-            abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash)
-        );
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash));
         return vm.sign(signerPk, digest);
     }
 
@@ -563,33 +296,19 @@ contract BlendTokenTest is Test {
         bytes32 nonce
     ) internal view returns (uint8 v, bytes32 r, bytes32 s) {
         bytes32 structHash = keccak256(
-            abi.encode(
-                RECEIVE_WITH_AUTHORIZATION_TYPEHASH,
-                from,
-                to,
-                value,
-                validAfter,
-                validBefore,
-                nonce
-            )
+            abi.encode(RECEIVE_WITH_AUTHORIZATION_TYPEHASH, from, to, value, validAfter, validBefore, nonce)
         );
-        bytes32 digest = keccak256(
-            abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash)
-        );
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash));
         return vm.sign(signerPk, digest);
     }
 
-    function _signCancelAuth(
-        uint256 signerPk,
-        address authorizer,
-        bytes32 nonce
-    ) internal view returns (uint8 v, bytes32 r, bytes32 s) {
-        bytes32 structHash = keccak256(
-            abi.encode(CANCEL_AUTHORIZATION_TYPEHASH, authorizer, nonce)
-        );
-        bytes32 digest = keccak256(
-            abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash)
-        );
+    function _signCancelAuth(uint256 signerPk, address authorizer, bytes32 nonce)
+        internal
+        view
+        returns (uint8 v, bytes32 r, bytes32 s)
+    {
+        bytes32 structHash = keccak256(abi.encode(CANCEL_AUTHORIZATION_TYPEHASH, authorizer, nonce));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash));
         return vm.sign(signerPk, digest);
     }
 }
@@ -597,10 +316,7 @@ contract BlendTokenTest is Test {
 contract Mock1271Wallet {
     bytes4 private constant MAGICVALUE = 0x1626ba7e;
 
-    function isValidSignature(
-        bytes32,
-        bytes memory
-    ) external pure returns (bytes4) {
+    function isValidSignature(bytes32, bytes memory) external pure returns (bytes4) {
         return MAGICVALUE;
     }
 }
@@ -670,9 +386,7 @@ contract BlendTokenHandler {
     }
 
     function mint(uint256 amount) external {
-        (bool ok, ) = address(token).call(
-            abi.encodeWithSelector(token.mint.selector, authorizer, amount)
-        );
+        (bool ok,) = address(token).call(abi.encodeWithSelector(token.mint.selector, authorizer, amount));
         if (!ok) {
             return;
         }
@@ -680,20 +394,21 @@ contract BlendTokenHandler {
 
     function useTransferAuthorization() external {
         bool wasUsed = token.authorizationState(authorizer, transferNonce);
-        (bool ok, ) = address(token).call(
-            abi.encodeWithSelector(
-                IEIP3009.transferWithAuthorization.selector,
-                authorizer,
-                payee,
-                transferValue,
-                validAfter,
-                validBefore,
-                transferNonce,
-                vTransfer,
-                rTransfer,
-                sTransfer
-            )
-        );
+        (bool ok,) = address(token)
+            .call(
+                abi.encodeWithSelector(
+                    IEIP3009.transferWithAuthorization.selector,
+                    authorizer,
+                    payee,
+                    transferValue,
+                    validAfter,
+                    validBefore,
+                    transferNonce,
+                    vTransfer,
+                    rTransfer,
+                    sTransfer
+                )
+            );
         if (wasUsed && ok) {
             reuseSucceeded = true;
         }
@@ -701,16 +416,12 @@ contract BlendTokenHandler {
 
     function cancelAuthorization() external {
         bool wasUsed = token.authorizationState(authorizer, cancelNonce);
-        (bool ok, ) = address(token).call(
-            abi.encodeWithSelector(
-                IEIP3009.cancelAuthorization.selector,
-                authorizer,
-                cancelNonce,
-                vCancel,
-                rCancel,
-                sCancel
-            )
-        );
+        (bool ok,) = address(token)
+            .call(
+                abi.encodeWithSelector(
+                    IEIP3009.cancelAuthorization.selector, authorizer, cancelNonce, vCancel, rCancel, sCancel
+                )
+            );
         if (wasUsed && ok) {
             reuseSucceeded = true;
         }
@@ -745,14 +456,8 @@ contract BlendTokenInvariant is StdInvariant, Test {
         uint256 validBefore = block.timestamp + 30 days;
         uint256 transferValue = 1e18;
 
-        Sig memory transferSig = _signTransferInvariant(
-            authorizer,
-            payee,
-            transferNonce,
-            validAfter,
-            validBefore,
-            transferValue
-        );
+        Sig memory transferSig =
+            _signTransferInvariant(authorizer, payee, transferNonce, validAfter, validBefore, transferValue);
 
         Sig memory cancelSig = _signCancelInvariant(authorizer, cancelNonce);
 
@@ -799,29 +504,16 @@ contract BlendTokenInvariant is StdInvariant, Test {
                 nonce
             )
         );
-        bytes32 digest = keccak256(
-            abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash)
-        );
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(authorizerPk, digest);
         return Sig({v: v, r: r, s: s});
     }
 
-    function _signCancelInvariant(
-        address authorizer,
-        bytes32 nonce
-    ) internal view returns (Sig memory) {
+    function _signCancelInvariant(address authorizer, bytes32 nonce) internal view returns (Sig memory) {
         bytes32 structHash = keccak256(
-            abi.encode(
-                keccak256(
-                    "CancelAuthorization(address authorizer,bytes32 nonce)"
-                ),
-                authorizer,
-                nonce
-            )
+            abi.encode(keccak256("CancelAuthorization(address authorizer,bytes32 nonce)"), authorizer, nonce)
         );
-        bytes32 digest = keccak256(
-            abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash)
-        );
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(authorizerPk, digest);
         return Sig({v: v, r: r, s: s});
     }

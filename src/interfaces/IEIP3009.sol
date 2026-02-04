@@ -37,13 +37,7 @@ interface IEIP3009 {
     ) external;
 
     /// @notice Cancel a signed authorization.
-    function cancelAuthorization(
-        address authorizer,
-        bytes32 nonce,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external;
+    function cancelAuthorization(address authorizer, bytes32 nonce, uint8 v, bytes32 r, bytes32 s) external;
 
     /// @notice Return true if the authorization is used or canceled.
     function authorizationState(address authorizer, bytes32 nonce) external view returns (bool);
