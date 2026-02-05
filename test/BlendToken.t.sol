@@ -84,7 +84,7 @@ contract BlendTokenTest is Test {
 
         vm.expectRevert(Pausable.EnforcedPause.selector);
         vm.prank(user);
-        token.transfer(spender, 1e18);
+        vm.assertTrue(token.transfer(spender, 1e18));
 
         vm.expectRevert(Pausable.EnforcedPause.selector);
         vm.prank(user);

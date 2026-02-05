@@ -58,7 +58,7 @@ contract BlendToken is ERC20, ERC20Permit, AccessControl, Pausable, IEIP3009 {
 
     /// @notice Create BLEND token with a fixed cap.
     /// @param cap_ Maximum total supply (must be > 0).
-    constructor(uint256 cap_) ERC20("BLEND", "BLEND") ERC20Permit("BLEND") {
+    constructor(uint256 cap_) ERC20("Fluent", "BLEND") ERC20Permit("Fluent") {
         if (cap_ == 0) revert CapExceeded(0, 0);
         CAP = cap_;
 
