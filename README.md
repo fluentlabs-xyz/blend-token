@@ -1,8 +1,38 @@
-## BLEND Token
+# BLEND Token
 
-BLEND is an ERC-20 token with gasless approvals and transfers. It supports both EIP-2612 `permit` and EIP-3009 authorizations for x402-style payments, with role-based minting.
+## What is this?
 
-### Features
+BLEND is the native token of the Fluent ecosystem. It's a standard ERC-20 token with built-in support for gasless transactions — users can approve spending or transfer tokens without holding ETH for gas.
+
+**Key points:**
+
+- Standard ERC-20 with 18 decimals
+- Gasless approvals via signed permits (EIP-2612)
+- Gasless transfers via signed authorizations (EIP-3009)
+- Fixed maximum supply set at deployment
+- Upgradeable via UUPS proxy pattern
+
+---
+
+## How to Build & Test
+
+**Prerequisites:**
+
+- [Foundry](https://book.getfoundry.sh/getting-started/installation)
+
+**Commands:**
+
+```bash
+forge install          # Install dependencies
+forge build            # Compile contracts
+forge test             # Run tests
+forge test -vvv        # Run tests with verbose output
+forge coverage         # Generate coverage report
+```
+
+---
+
+## Features
 
 - ERC-20 with configurable `name`/`symbol` at deploy (`decimals = 18`)
 - Roles: `DEFAULT_ADMIN_ROLE`, `MINTER_ROLE`, `UPGRADER_ROLE`
@@ -13,7 +43,7 @@ BLEND is an ERC-20 token with gasless approvals and transfers. It supports both 
 - EIP-3009 `transferWithAuthorization`, `receiveWithAuthorization`, `cancelAuthorization`
 - EIP-1271 support for contract wallet signatures (via EIP-3009)
 
-### Standards
+## Standards
 
 - [EIP-20](https://eips.ethereum.org/EIPS/eip-20): Fungible token interface
 - [EIP-2612](https://eips.ethereum.org/EIPS/eip-2612): `permit` approvals by signature
@@ -21,13 +51,13 @@ BLEND is an ERC-20 token with gasless approvals and transfers. It supports both 
 - [EIP-712](https://eips.ethereum.org/EIPS/eip-712): Typed structured data signing
 - [EIP-1271](https://eips.ethereum.org/EIPS/eip-1271): Contract wallet signature validation
 
-### Security Notes
+## Security Notes
 
 - `transferWithAuthorization` supports contract recipients via relayers; `receiveWithAuthorization` is payee-bound.
 - Use `receiveWithAuthorization` for contract recipients to avoid front-running risk in deposit flows.
 - Role-based control: admin/upgrade/minter keys are trusted actors; use multisigs for production.
 
-### Standards Interactions
+## Standards Interactions
 
 Problem we solve: gasless approvals and gasless transfers for EOAs and contract wallets without breaking ERC-20 compatibility.
 
@@ -43,12 +73,12 @@ Tradeoffs and options:
 - If you need permit for contract wallets, add an EIP-1271-aware permit extension or rely on EIP-3009 for gasless UX.
 - Alternative approaches: only EIP-2612 (simpler), only EIP-3009 (less familiar), or ERC-4337 account abstraction.
 
-### Architecture (Upgradeable)
+## Architecture (Upgradeable)
 
 BLEND uses a UUPS proxy. The proxy holds all state; the implementation holds logic and upgrade authorization.
 Initialization must be called via the proxy.
 
-### Upgradeability
+## Upgradeability
 
 BLEND uses the UUPS (Universal Upgradeable Proxy Standard) proxy pattern. The contract can be upgraded by addresses holding `UPGRADER_ROLE`.
 
@@ -64,7 +94,7 @@ BlendToken(proxy).upgradeToAndCall(newImplementation, "");
 - Implementation contract cannot be initialized directly
 - Storage layout must be preserved across upgrades (use gaps for new variables)
 
-### Role Management
+## Role Management
 
 **Role model:**
 
@@ -93,7 +123,7 @@ token.renounceRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
 Anyone can burn their own tokens via `burn`. `burnFrom` uses standard allowances.
 
-### Initialization Parameters
+## Initialization Parameters
 
 The proxy must be initialized exactly once via:
 `initialize(name, symbol, cap, initialSupply, initialRecipient, admin)`
@@ -104,13 +134,12 @@ The proxy must be initialized exactly once via:
 - `initialRecipient`: required if `initialSupply > 0`
 - `admin`: receives `DEFAULT_ADMIN_ROLE`, `MINTER_ROLE`, `UPGRADER_ROLE`
 
-### Quickstart
+## Deployment
 
-```shell
-forge test
+```bash
 forge script script/DeployBlendToken.s.sol:DeployBlendToken --rpc-url <RPC_URL> --private-key <PRIVATE_KEY> --broadcast
 ```
 
-### Foundry
+## Foundry
 
 Foundry docs: <https://book.getfoundry.sh/>
