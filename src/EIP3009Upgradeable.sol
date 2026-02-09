@@ -1,17 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 import {IEIP3009} from "./IEIP3009.sol";
 
-/// @title EIP-3009 Authorization Mixin
-/// @notice Implements EIP-3009 authorization flows for ERC-20 tokens.
-abstract contract EIP3009 is IEIP3009 {
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                            CONSTANTS                           */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
+/// @title EIP-3009 Authorization Mixin (Upgradeable)
+/// @notice Implements EIP-3009 authorization flows for ERC-20 tokens
+abstract contract EIP3009Upgradeable is Initializable, IEIP3009 {
     bytes32 internal constant TRANSFER_WITH_AUTHORIZATION_TYPEHASH = keccak256(
         "TransferWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
     );
@@ -23,15 +20,10 @@ abstract contract EIP3009 is IEIP3009 {
     bytes32 internal constant CANCEL_AUTHORIZATION_TYPEHASH =
         keccak256("CancelAuthorization(address authorizer,bytes32 nonce)");
 
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                              STORAGE                           */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
     mapping(address => mapping(bytes32 => bool)) private _authorizationState;
 
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                               ERRORS                           */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+    /// @dev Storage gap for future upgrades (reserve slots for new state variables).
+    uint256[49] private __gap;
 
     /// @dev Selector: 0xd309466d — "AuthorizationAlreadyUsed(address,bytes32)"
     error AuthorizationAlreadyUsed(address authorizer, bytes32 nonce);
@@ -44,19 +36,18 @@ abstract contract EIP3009 is IEIP3009 {
     /// @dev Selector: 0xfea94442 — "InvalidPayee(address,address)"
     error InvalidPayee(address expected, address actual);
 
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                               VIEW                             */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+    /// @dev Initializes the EIP3009 module.
+    function __EIP3009_init() internal onlyInitializing {
+        __EIP3009_init_unchained();
+    }
+
+    function __EIP3009_init_unchained() internal onlyInitializing {}
 
     /// @inheritdoc IEIP3009
     /// @dev Selector: 0xe94a0102 — "authorizationState(address,bytes32)"
     function authorizationState(address authorizer, bytes32 nonce) public view virtual returns (bool) {
         return _authorizationState[authorizer][nonce];
     }
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                             EXTERNAL                           */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IEIP3009
     /// @dev Selector: 0xe3ee160e — "transferWithAuthorization(address,address,uint256,uint256,uint256,bytes32,uint8,bytes32,bytes32)"
@@ -136,10 +127,6 @@ abstract contract EIP3009 is IEIP3009 {
         _authorizationState[authorizer][nonce] = true;
         emit AuthorizationCanceled(authorizer, nonce);
     }
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                             INTERNAL                           */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _requireValidAuthorization(address authorizer, bytes32 nonce, uint256 validAfter, uint256 validBefore)
         internal

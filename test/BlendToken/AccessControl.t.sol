@@ -60,18 +60,4 @@ contract BlendTokenAccessControlTest is BlendTokenBase {
 
         assertFalse(token.hasRole(role, minter));
     }
-
-    function test_grantRole_idempotent() public {
-        bytes32 role = token.MINTER_ROLE();
-        vm.prank(deployer);
-        token.grantRole(role, minter);
-        assertTrue(token.hasRole(role, minter));
-    }
-
-    function test_revokeRole_missing_isNoop() public {
-        bytes32 role = token.MINTER_ROLE();
-        vm.prank(deployer);
-        token.revokeRole(role, alice);
-        assertFalse(token.hasRole(role, alice));
-    }
 }

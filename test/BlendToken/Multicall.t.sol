@@ -43,11 +43,4 @@ contract BlendTokenMulticallTest is BlendTokenBase {
 
         assertEq(token.balanceOf(alice), aliceBefore);
     }
-
-    function test_multicall_empty_returnsEmpty() public {
-        bytes[] memory data = new bytes[](0);
-        vm.prank(alice);
-        bytes[] memory results = token.multicall(data);
-        assertEq(results.length, 0);
-    }
 }

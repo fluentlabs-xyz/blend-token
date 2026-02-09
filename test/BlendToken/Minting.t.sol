@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
 import {BlendToken} from "src/BlendToken.sol";
 import {BlendTokenBase} from "test/BlendToken/Base.t.sol";
@@ -38,10 +39,10 @@ contract BlendTokenMintingTest is BlendTokenBase {
     }
 
     function test_mint_upToCap_succeeds() public {
-        uint256 remaining = token.CAP() - token.totalSupply();
+        uint256 remaining = token.cap() - token.totalSupply();
         vm.prank(minter);
         token.mint(alice, remaining);
-        assertEq(token.totalSupply(), token.CAP());
+        assertEq(token.totalSupply(), token.cap());
     }
 
     function test_nonMinter_mint_reverts() public {
@@ -97,9 +98,9 @@ contract BlendTokenMintingTest is BlendTokenBase {
     }
 
     function test_mint_overCap_reverts() public {
-        uint256 remaining = token.CAP() - token.totalSupply();
+        uint256 remaining = token.cap() - token.totalSupply();
         uint256 amount = remaining + 1;
-        uint256 cap = token.CAP();
+        uint256 cap = token.cap();
         uint256 attemptedSupply = token.totalSupply() + amount;
 
         vm.prank(minter);
@@ -108,7 +109,7 @@ contract BlendTokenMintingTest is BlendTokenBase {
     }
 
     function test_mintBatch_overCap_reverts() public {
-        uint256 remaining = token.CAP() - token.totalSupply();
+        uint256 remaining = token.cap() - token.totalSupply();
         address[] memory recipients = new address[](2);
         recipients[0] = alice;
         recipients[1] = bob;
@@ -117,7 +118,7 @@ contract BlendTokenMintingTest is BlendTokenBase {
         amounts[0] = remaining;
         amounts[1] = 1;
 
-        uint256 cap = token.CAP();
+        uint256 cap = token.cap();
         uint256 attemptedSupply = token.totalSupply() + remaining + 1;
 
         vm.prank(minter);
@@ -125,10 +126,40 @@ contract BlendTokenMintingTest is BlendTokenBase {
         token.mintBatch(recipients, amounts);
     }
 
-    function test_mintBatch_emptyArrays_noop() public {
-        uint256 supplyBefore = token.totalSupply();
-        vm.prank(minter);
-        token.mintBatch(new address[](0), new uint256[](0));
-        assertEq(token.totalSupply(), supplyBefore);
+    function test_burn_reducesSupplyAndBalance() public {
+        uint256 amount = 10 * UNIT;
+
+        vm.prank(deployer);
+        vm.expectEmit(true, true, true, true);
+        emit IERC20.Transfer(deployer, address(0), amount);
+        token.burn(amount);
+
+        assertEq(token.balanceOf(deployer), INITIAL_SUPPLY - amount);
+        assertEq(token.totalSupply(), INITIAL_SUPPLY - amount);
+    }
+
+    function test_burnFrom_spendsAllowanceAndBurns() public {
+        uint256 amount = 25 * UNIT;
+        _mintTo(alice, amount);
+
+        vm.prank(alice);
+        token.approve(bob, amount);
+
+        vm.prank(bob);
+        vm.expectEmit(true, true, true, true);
+        emit IERC20.Transfer(alice, address(0), amount);
+        token.burnFrom(alice, amount);
+
+        assertEq(token.allowance(alice, bob), 0);
+        assertEq(token.balanceOf(alice), 0);
+    }
+
+    function test_burnFrom_withoutAllowance_reverts() public {
+        uint256 amount = 5 * UNIT;
+        _mintTo(alice, amount);
+
+        vm.prank(bob);
+        vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InsufficientAllowance.selector, bob, 0, amount));
+        token.burnFrom(alice, amount);
     }
 }

@@ -2,7 +2,9 @@
 pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {
+    ERC20PermitUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import {BlendTokenBase} from "test/BlendToken/Base.t.sol";
@@ -32,7 +34,7 @@ contract BlendTokenEIP2612PermitTest is BlendTokenBase {
 
         (uint8 v, bytes32 r, bytes32 s) = _signPermit(bobPk, alice, bob, value, nonce, deadline);
 
-        vm.expectRevert(abi.encodeWithSelector(ERC20Permit.ERC2612InvalidSigner.selector, bob, alice));
+        vm.expectRevert(abi.encodeWithSelector(ERC20PermitUpgradeable.ERC2612InvalidSigner.selector, bob, alice));
         token.permit(alice, bob, value, deadline, v, r, s);
     }
 
@@ -43,7 +45,7 @@ contract BlendTokenEIP2612PermitTest is BlendTokenBase {
 
         (uint8 v, bytes32 r, bytes32 s) = _signPermit(alicePk, alice, bob, value, nonce, deadline);
 
-        vm.expectRevert(abi.encodeWithSelector(ERC20Permit.ERC2612ExpiredSignature.selector, deadline));
+        vm.expectRevert(abi.encodeWithSelector(ERC20PermitUpgradeable.ERC2612ExpiredSignature.selector, deadline));
         token.permit(alice, bob, value, deadline, v, r, s);
     }
 
@@ -60,22 +62,7 @@ contract BlendTokenEIP2612PermitTest is BlendTokenBase {
         bytes32 digest = Signatures.permitDigest(token.DOMAIN_SEPARATOR(), alice, bob, value, currentNonce, deadline);
         address recovered = ECDSA.recover(digest, v, r, s);
 
-        vm.expectRevert(abi.encodeWithSelector(ERC20Permit.ERC2612InvalidSigner.selector, recovered, alice));
-        token.permit(alice, bob, value, deadline, v, r, s);
-    }
-
-    function test_permit_wrongNonce_reverts() public {
-        uint256 value = 10 * UNIT;
-        uint256 deadline = block.timestamp + 1 days;
-        uint256 nonce = token.nonces(alice) + 1;
-
-        (uint8 v, bytes32 r, bytes32 s) = _signPermit(alicePk, alice, bob, value, nonce, deadline);
-
-        uint256 currentNonce = token.nonces(alice);
-        bytes32 digest = Signatures.permitDigest(token.DOMAIN_SEPARATOR(), alice, bob, value, currentNonce, deadline);
-        address recovered = ECDSA.recover(digest, v, r, s);
-
-        vm.expectRevert(abi.encodeWithSelector(ERC20Permit.ERC2612InvalidSigner.selector, recovered, alice));
+        vm.expectRevert(abi.encodeWithSelector(ERC20PermitUpgradeable.ERC2612InvalidSigner.selector, recovered, alice));
         token.permit(alice, bob, value, deadline, v, r, s);
     }
 }

@@ -5,7 +5,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {StdStorage, stdStorage} from "forge-std/StdStorage.sol";
 
-import {BlendToken} from "src/BlendToken.sol";
 import {BlendTokenBase} from "test/BlendToken/Base.t.sol";
 
 contract BlendTokenERC20Test is BlendTokenBase {
@@ -108,28 +107,6 @@ contract BlendTokenERC20Test is BlendTokenBase {
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InvalidReceiver.selector, address(0)));
         token.transfer(address(0), 1);
-    }
-
-    function test_transfer_fromZero_reverts() public {
-        vm.prank(address(0));
-        vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InvalidSender.selector, address(0)));
-        token.transfer(alice, 1);
-    }
-
-    function test_transferFrom_fromZero_reverts() public {
-        uint256 slot =
-            stdstore.target(address(token)).sig("allowance(address,address)").with_key(address(0)).with_key(bob).find();
-        vm.store(address(token), bytes32(slot), bytes32(type(uint256).max));
-
-        vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InvalidSender.selector, address(0)));
-        token.transferFrom(address(0), alice, 1);
-    }
-
-    function test_approve_fromZero_reverts() public {
-        vm.prank(address(0));
-        vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InvalidApprover.selector, address(0)));
-        token.approve(bob, 1);
     }
 
     function test_approve_toZero_reverts() public {

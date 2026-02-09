@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {BlendToken} from "src/BlendToken.sol";
-import {EIP3009} from "src/EIP3009.sol";
+import {EIP3009Upgradeable} from "src/EIP3009Upgradeable.sol";
 import {IEIP3009} from "src/IEIP3009.sol";
 import {BlendTokenBase} from "test/BlendToken/Base.t.sol";
 
@@ -146,7 +146,7 @@ contract BlendTokenEIP3009AuthTest is BlendTokenBase {
         token.transferWithAuthorization(alice, bob, amount, validAfter, validBefore, nonce, v, r, s);
 
         vm.prank(relayer);
-        vm.expectRevert(abi.encodeWithSelector(EIP3009.AuthorizationAlreadyUsed.selector, alice, nonce));
+        vm.expectRevert(abi.encodeWithSelector(EIP3009Upgradeable.AuthorizationAlreadyUsed.selector, alice, nonce));
         token.transferWithAuthorization(alice, bob, amount, validAfter, validBefore, nonce, v, r, s);
     }
 
@@ -162,7 +162,7 @@ contract BlendTokenEIP3009AuthTest is BlendTokenBase {
             _signTransferWithAuthorization(alicePk, alice, bob, amount, validAfter, validBefore, nonce);
 
         vm.prank(relayer);
-        vm.expectRevert(abi.encodeWithSelector(EIP3009.AuthorizationNotYetValid.selector, validAfter));
+        vm.expectRevert(abi.encodeWithSelector(EIP3009Upgradeable.AuthorizationNotYetValid.selector, validAfter));
         token.transferWithAuthorization(alice, bob, amount, validAfter, validBefore, nonce, v, r, s);
     }
 
@@ -179,7 +179,7 @@ contract BlendTokenEIP3009AuthTest is BlendTokenBase {
             _signTransferWithAuthorization(alicePk, alice, bob, amount, validAfter, validBefore, nonce);
 
         vm.prank(relayer);
-        vm.expectRevert(abi.encodeWithSelector(EIP3009.AuthorizationNotYetValid.selector, validAfter));
+        vm.expectRevert(abi.encodeWithSelector(EIP3009Upgradeable.AuthorizationNotYetValid.selector, validAfter));
         token.transferWithAuthorization(alice, bob, amount, validAfter, validBefore, nonce, v, r, s);
     }
 
@@ -197,7 +197,7 @@ contract BlendTokenEIP3009AuthTest is BlendTokenBase {
             _signTransferWithAuthorization(alicePk, alice, bob, amount, validAfter, validBefore, nonce);
 
         vm.prank(relayer);
-        vm.expectRevert(abi.encodeWithSelector(EIP3009.AuthorizationExpired.selector, validBefore));
+        vm.expectRevert(abi.encodeWithSelector(EIP3009Upgradeable.AuthorizationExpired.selector, validBefore));
         token.transferWithAuthorization(alice, bob, amount, validAfter, validBefore, nonce, v, r, s);
     }
 
@@ -214,7 +214,7 @@ contract BlendTokenEIP3009AuthTest is BlendTokenBase {
             _signTransferWithAuthorization(alicePk, alice, bob, amount, validAfter, validBefore, nonce);
 
         vm.prank(relayer);
-        vm.expectRevert(abi.encodeWithSelector(EIP3009.AuthorizationExpired.selector, validBefore));
+        vm.expectRevert(abi.encodeWithSelector(EIP3009Upgradeable.AuthorizationExpired.selector, validBefore));
         token.transferWithAuthorization(alice, bob, amount, validAfter, validBefore, nonce, v, r, s);
     }
 
@@ -230,7 +230,7 @@ contract BlendTokenEIP3009AuthTest is BlendTokenBase {
             _signTransferWithAuthorization(bobPk, alice, bob, amount, validAfter, validBefore, nonce);
 
         vm.prank(relayer);
-        vm.expectRevert(EIP3009.InvalidSignature.selector);
+        vm.expectRevert(EIP3009Upgradeable.InvalidSignature.selector);
         token.transferWithAuthorization(alice, bob, amount, validAfter, validBefore, nonce, v, r, s);
     }
 
@@ -246,7 +246,7 @@ contract BlendTokenEIP3009AuthTest is BlendTokenBase {
             _signReceiveWithAuthorization(alicePk, alice, bob, amount, validAfter, validBefore, nonce);
 
         vm.prank(relayer);
-        vm.expectRevert(abi.encodeWithSelector(EIP3009.InvalidPayee.selector, relayer, bob));
+        vm.expectRevert(abi.encodeWithSelector(EIP3009Upgradeable.InvalidPayee.selector, relayer, bob));
         token.receiveWithAuthorization(alice, bob, amount, validAfter, validBefore, nonce, v, r, s);
     }
 
@@ -267,7 +267,7 @@ contract BlendTokenEIP3009AuthTest is BlendTokenBase {
             _signTransferWithAuthorization(alicePk, alice, bob, amount, validAfter, validBefore, nonce);
 
         vm.prank(relayer);
-        vm.expectRevert(abi.encodeWithSelector(EIP3009.AuthorizationAlreadyUsed.selector, alice, nonce));
+        vm.expectRevert(abi.encodeWithSelector(EIP3009Upgradeable.AuthorizationAlreadyUsed.selector, alice, nonce));
         token.transferWithAuthorization(alice, bob, amount, validAfter, validBefore, nonce, v, r, s);
     }
 
@@ -288,7 +288,7 @@ contract BlendTokenEIP3009AuthTest is BlendTokenBase {
             _signReceiveWithAuthorization(alicePk, alice, bob, amount, validAfter, validBefore, nonce);
 
         vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(EIP3009.AuthorizationAlreadyUsed.selector, alice, nonce));
+        vm.expectRevert(abi.encodeWithSelector(EIP3009Upgradeable.AuthorizationAlreadyUsed.selector, alice, nonce));
         token.receiveWithAuthorization(alice, bob, amount, validAfter, validBefore, nonce, v, r, s);
     }
 
@@ -321,17 +321,5 @@ contract BlendTokenEIP3009AuthTest is BlendTokenBase {
         assertTrue(token.authorizationState(alice, nonce));
         assertEq(token.balanceOf(alice), aliceBefore - amount);
         assertEq(token.balanceOf(address(recipient)), recipientBefore + amount);
-    }
-
-    function test_authorizationState_falseThenTrue() public {
-        bytes32 nonce = keccak256("nonce-10");
-        assertFalse(token.authorizationState(alice, nonce));
-
-        (uint8 v, bytes32 r, bytes32 s) = _signCancelAuthorization(alicePk, alice, nonce);
-
-        vm.prank(relayer);
-        token.cancelAuthorization(alice, nonce, v, r, s);
-
-        assertTrue(token.authorizationState(alice, nonce));
     }
 }

@@ -2,12 +2,15 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {BlendToken} from "src/BlendToken.sol";
 import {Signatures} from "test/fixtures/Signatures.sol";
 
 abstract contract BlendTokenBase is Test {
     BlendToken internal token;
+    BlendToken internal implementation;
+    address internal proxy;
 
     uint256 internal constant CAP = 1_000_000e18;
     uint256 internal constant INITIAL_SUPPLY = 100_000e18;
@@ -36,7 +39,13 @@ abstract contract BlendTokenBase is Test {
         relayer = vm.addr(relayerPk);
 
         vm.startPrank(deployer);
-        token = new BlendToken("Blend Token", "BLEND", CAP, INITIAL_SUPPLY, deployer);
+        implementation = new BlendToken();
+
+        bytes memory initData =
+            abi.encodeCall(BlendToken.initialize, ("Fluent", "BLEND", CAP, INITIAL_SUPPLY, deployer, deployer));
+        proxy = address(new ERC1967Proxy(address(implementation), initData));
+        token = BlendToken(proxy);
+
         token.grantRole(token.MINTER_ROLE(), minter);
         vm.stopPrank();
     }
