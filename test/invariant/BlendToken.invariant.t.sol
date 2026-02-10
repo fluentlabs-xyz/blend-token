@@ -50,6 +50,14 @@ contract BlendTokenInvariantTest is StdInvariant, Test {
         assertLe(token.totalSupply(), token.cap());
     }
 
+    function invariant_mintedTotal_capped() public view {
+        assertLe(token.mintedTotal(), token.cap());
+    }
+
+    function invariant_totalSupply_notAboveMinted() public view {
+        assertLe(token.totalSupply(), token.mintedTotal());
+    }
+
     function invariant_authorizationState_monotonic() public view {
         (address[] memory authors, bytes32[] memory nonces) = handler.usedAuthorizations();
         for (uint256 i = 0; i < nonces.length; i++) {
@@ -128,7 +136,7 @@ contract BlendTokenHandler {
 
     function mint(uint256 toSeed, uint256 rawAmount) external {
         address to = _actor(toSeed);
-        uint256 available = token.cap() - token.totalSupply();
+        uint256 available = token.cap() - token.mintedTotal();
         if (available == 0) return;
 
         uint256 amount = rawAmount % (available + 1);
@@ -140,7 +148,7 @@ contract BlendTokenHandler {
     function mintBatch(uint256 toSeedA, uint256 toSeedB, uint256 rawAmountA, uint256 rawAmountB) external {
         address toA = _actor(toSeedA);
         address toB = _actor(toSeedB);
-        uint256 available = token.cap() - token.totalSupply();
+        uint256 available = token.cap() - token.mintedTotal();
         if (available == 0) return;
 
         uint256 amountA = rawAmountA % (available + 1);

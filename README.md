@@ -9,7 +9,7 @@ BLEND is the native token of the Fluent ecosystem. It's a standard ERC-20 token 
 - Standard ERC-20 with 18 decimals
 - Gasless approvals via signed permits (EIP-2612)
 - Gasless transfers via signed authorizations (EIP-3009)
-- Fixed maximum supply set at deployment
+- Lifetime mint cap set at deployment (burning does not increase mint capacity)
 - Upgradeable via UUPS proxy pattern
 
 ---
@@ -36,7 +36,7 @@ forge coverage         # Generate coverage report
 
 - ERC-20 with configurable `name`/`symbol` at deploy (`decimals = 18`)
 - Roles: `DEFAULT_ADMIN_ROLE`, `MINTER_ROLE`, `UPGRADER_ROLE`
-- Capped supply (`cap()` view)
+- Capped supply (`cap()` view, lifetime mint cap)
 - Batch minting and multicall
 - Optional initial supply minted at deployment
 - EIP-2612 `permit` (gasless approvals)
@@ -119,13 +119,17 @@ token.renounceRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
 ⚠️ **Warning**: Renouncing `DEFAULT_ADMIN_ROLE` removes role management. If no account retains `UPGRADER_ROLE`, upgrades become impossible.
 
+**Burning capability:**
+
+Anyone can burn their own tokens via `burn`. `burnFrom` uses standard allowances. Burning reduces `totalSupply()` but does not increase remaining mint capacity.
+
 ## Initialization Parameters
 
 The proxy must be initialized exactly once via:
 `initialize(name, symbol, cap, initialSupply, initialRecipient, admin)`
 
 - `name`, `symbol`: ERC-20 metadata
-- `cap`: maximum total supply (must be > 0)
+- `cap`: maximum lifetime mint cap (must be > 0)
 - `initialSupply`: minted during initialization (0 allowed)
 - `initialRecipient`: required if `initialSupply > 0`
 - `admin`: receives `DEFAULT_ADMIN_ROLE`, `MINTER_ROLE`, `UPGRADER_ROLE`

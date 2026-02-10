@@ -48,6 +48,7 @@ contract BlendTokenInitializationTest is Test {
         assertEq(token.name(), "Fluent");
         assertEq(token.symbol(), "BLEND");
         assertEq(token.cap(), 1_000_000e18);
+        assertEq(token.mintedTotal(), 0);
 
         assertTrue(token.hasRole(token.DEFAULT_ADMIN_ROLE(), deployer));
         assertTrue(token.hasRole(token.MINTER_ROLE(), deployer));
@@ -73,6 +74,7 @@ contract BlendTokenInitializationTest is Test {
 
         assertEq(token.totalSupply(), initialSupply);
         assertEq(token.balanceOf(recipient), initialSupply);
+        assertEq(token.mintedTotal(), initialSupply);
     }
 
     function test_initialize_capZero_reverts() public {
@@ -108,6 +110,7 @@ contract BlendTokenInitializationTest is Test {
         BlendToken token = _deploy("Fluent", "BLEND", 100e18, 100e18, recipient, deployer);
         assertEq(token.totalSupply(), 100e18);
         assertEq(token.balanceOf(recipient), 100e18);
+        assertEq(token.mintedTotal(), 100e18);
     }
 
     function test_initialize_zeroSupply_allowsZeroRecipient() public {
@@ -115,5 +118,6 @@ contract BlendTokenInitializationTest is Test {
         BlendToken token = _deploy("Fluent", "BLEND", 100e18, 0, address(0), deployer);
         assertEq(token.totalSupply(), 0);
         assertEq(token.balanceOf(address(0)), 0);
+        assertEq(token.mintedTotal(), 0);
     }
 }

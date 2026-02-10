@@ -36,11 +36,13 @@ contract BlendToken is
     /// @dev Selector: 0xf72c0d8b — "UPGRADER_ROLE()"
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
-    /// @dev Maximum total supply (set once during initialization).
+    /// @dev Maximum lifetime mint cap (set once during initialization).
     uint256 private _cap;
+    /// @dev Total minted supply (lifetime, does not decrease on burn).
+    uint256 private _mintedTotal;
 
     /// @dev Storage gap for future upgrades.
-    uint256[48] private __gap;
+    uint256[47] private __gap;
 
     /// @dev Selector: 0xf480e285 — "CapExceeded(uint256,uint256)"
     error CapExceeded(uint256 cap, uint256 attemptedSupply);
@@ -58,7 +60,7 @@ contract BlendToken is
     /// @dev Selector: 0x767ab122 — "initialize(string,string,uint256,uint256,address,address)"
     /// @param name_ Token name.
     /// @param symbol_ Token symbol.
-    /// @param cap_ Maximum total supply (must be > 0).
+    /// @param cap_ Maximum lifetime mint cap (must be > 0).
     /// @param initialSupply_ Initial supply to mint (0 allowed).
     /// @param initialRecipient_ Recipient of initial supply (required if initialSupply_ > 0).
     /// @param admin_ Address to receive admin and operational roles.
@@ -89,24 +91,32 @@ contract BlendToken is
             if (initialRecipient_ == address(0)) revert ZeroAddress();
             if (initialSupply_ > cap_) revert CapExceeded(cap_, initialSupply_);
             _mint(initialRecipient_, initialSupply_);
+            _mintedTotal = initialSupply_;
         }
     }
 
-    /// @notice Returns the cap on the token's total supply.
+    /// @notice Returns the lifetime mint cap on the token's supply.
     /// @dev Selector: 0x355274ea — "cap()"
     function cap() public view returns (uint256) {
         return _cap;
     }
 
-    /// @notice Mint tokens to a recipient, respecting the cap.
+    /// @notice Returns the total amount ever minted (lifetime).
+    /// @dev Selector: 0x891aaf68 — "mintedTotal()"
+    function mintedTotal() public view returns (uint256) {
+        return _mintedTotal;
+    }
+
+    /// @notice Mint tokens to a recipient, respecting the lifetime mint cap.
     /// @dev Selector: 0x40c10f19 — "mint(address,uint256)"
     /// @param to Recipient address.
     /// @param amount Amount to mint.
     function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
         if (to == address(0)) revert ZeroAddress();
-        uint256 newSupply = totalSupply() + amount;
-        if (newSupply > _cap) revert CapExceeded(_cap, newSupply);
+        uint256 newMinted = _mintedTotal + amount;
+        if (newMinted > _cap) revert CapExceeded(_cap, newMinted);
         _mint(to, amount);
+        _mintedTotal = newMinted;
     }
 
     /// @notice Mint tokens to many recipients in a single call.
@@ -123,12 +133,30 @@ contract BlendToken is
             total += amounts[i];
         }
 
-        uint256 newSupply = totalSupply() + total;
-        if (newSupply > _cap) revert CapExceeded(_cap, newSupply);
+        uint256 newMinted = _mintedTotal + total;
+        if (newMinted > _cap) revert CapExceeded(_cap, newMinted);
 
         for (uint256 i = 0; i < length; i++) {
             _mint(to[i], amounts[i]);
         }
+
+        _mintedTotal = newMinted;
+    }
+
+    /// @notice Burn tokens from the caller.
+    /// @dev Selector: 0x42966c68 — "burn(uint256)"
+    /// @param amount Amount to burn.
+    function burn(uint256 amount) external {
+        _burn(msg.sender, amount);
+    }
+
+    /// @notice Burn tokens from an account using allowance.
+    /// @dev Selector: 0x79cc6790 — "burnFrom(address,uint256)"
+    /// @param account Account to burn from.
+    /// @param amount Amount to burn.
+    function burnFrom(address account, uint256 amount) external {
+        _spendAllowance(account, msg.sender, amount);
+        _burn(account, amount);
     }
 
     /// @dev Required by UUPSUpgradeable - restricts upgrades to upgrader role only.

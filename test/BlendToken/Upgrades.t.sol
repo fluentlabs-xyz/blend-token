@@ -47,6 +47,7 @@ contract BlendTokenUpgradesTest is BlendTokenBase {
 
         uint256 totalSupplyBefore = token.totalSupply();
         uint256 capBefore = token.cap();
+        uint256 mintedTotalBefore = token.mintedTotal();
 
         vm.prank(deployer);
         token.upgradeToAndCall(address(v2Implementation), "");
@@ -55,6 +56,7 @@ contract BlendTokenUpgradesTest is BlendTokenBase {
         assertEq(token.allowance(alice, bob), 50 * UNIT);
         assertEq(token.totalSupply(), totalSupplyBefore);
         assertEq(token.cap(), capBefore);
+        assertEq(token.mintedTotal(), mintedTotalBefore);
         assertTrue(token.hasRole(token.DEFAULT_ADMIN_ROLE(), deployer));
         assertTrue(token.hasRole(token.MINTER_ROLE(), minter));
     }
