@@ -119,10 +119,6 @@ token.renounceRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
 ⚠️ **Warning**: Renouncing `DEFAULT_ADMIN_ROLE` removes role management. If no account retains `UPGRADER_ROLE`, upgrades become impossible.
 
-**Burning capability:**
-
-Anyone can burn their own tokens via `burn`. `burnFrom` uses standard allowances.
-
 ## Initialization Parameters
 
 The proxy must be initialized exactly once via:

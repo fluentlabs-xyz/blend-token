@@ -125,41 +125,4 @@ contract BlendTokenMintingTest is BlendTokenBase {
         vm.expectRevert(abi.encodeWithSelector(BlendToken.CapExceeded.selector, cap, attemptedSupply));
         token.mintBatch(recipients, amounts);
     }
-
-    function test_burn_reducesSupplyAndBalance() public {
-        uint256 amount = 10 * UNIT;
-
-        vm.prank(deployer);
-        vm.expectEmit(true, true, true, true);
-        emit IERC20.Transfer(deployer, address(0), amount);
-        token.burn(amount);
-
-        assertEq(token.balanceOf(deployer), INITIAL_SUPPLY - amount);
-        assertEq(token.totalSupply(), INITIAL_SUPPLY - amount);
-    }
-
-    function test_burnFrom_spendsAllowanceAndBurns() public {
-        uint256 amount = 25 * UNIT;
-        _mintTo(alice, amount);
-
-        vm.prank(alice);
-        token.approve(bob, amount);
-
-        vm.prank(bob);
-        vm.expectEmit(true, true, true, true);
-        emit IERC20.Transfer(alice, address(0), amount);
-        token.burnFrom(alice, amount);
-
-        assertEq(token.allowance(alice, bob), 0);
-        assertEq(token.balanceOf(alice), 0);
-    }
-
-    function test_burnFrom_withoutAllowance_reverts() public {
-        uint256 amount = 5 * UNIT;
-        _mintTo(alice, amount);
-
-        vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InsufficientAllowance.selector, bob, 0, amount));
-        token.burnFrom(alice, amount);
-    }
 }

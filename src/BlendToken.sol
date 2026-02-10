@@ -131,22 +131,6 @@ contract BlendToken is
         }
     }
 
-    /// @notice Burn tokens from the caller.
-    /// @dev Selector: 0x42966c68 — "burn(uint256)"
-    /// @param amount Amount to burn.
-    function burn(uint256 amount) external {
-        _burn(msg.sender, amount);
-    }
-
-    /// @notice Burn tokens from an account using allowance.
-    /// @dev Selector: 0x79cc6790 — "burnFrom(address,uint256)"
-    /// @param account Account to burn from.
-    /// @param amount Amount to burn.
-    function burnFrom(address account, uint256 amount) external {
-        _spendAllowance(account, msg.sender, amount);
-        _burn(account, amount);
-    }
-
     /// @dev Required by UUPSUpgradeable - restricts upgrades to upgrader role only.
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 

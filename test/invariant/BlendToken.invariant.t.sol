@@ -46,18 +46,18 @@ contract BlendTokenInvariantTest is StdInvariant, Test {
         excludeSender(address(0));
     }
 
-    function invariant_totalSupply_capped() public {
+    function invariant_totalSupply_capped() public view {
         assertLe(token.totalSupply(), token.cap());
     }
 
-    function invariant_authorizationState_monotonic() public {
+    function invariant_authorizationState_monotonic() public view {
         (address[] memory authors, bytes32[] memory nonces) = handler.usedAuthorizations();
         for (uint256 i = 0; i < nonces.length; i++) {
             assertTrue(token.authorizationState(authors[i], nonces[i]));
         }
     }
 
-    function invariant_balances_match_handler() public {
+    function invariant_balances_match_handler() public view {
         uint256 count = handler.actorsLength();
         for (uint256 i = 0; i < count; i++) {
             address actor = handler.actors(i);
@@ -65,7 +65,7 @@ contract BlendTokenInvariantTest is StdInvariant, Test {
         }
     }
 
-    function invariant_allowances_match_handler() public {
+    function invariant_allowances_match_handler() public view {
         uint256 count = handler.actorsLength();
         for (uint256 i = 0; i < count; i++) {
             address owner = handler.actors(i);
@@ -102,15 +102,15 @@ contract BlendTokenHandler {
     address[] internal usedAuthors;
     bytes32[] internal usedNonces;
 
-    constructor(BlendToken _token, address _minter, address[] memory actors, uint256[] memory keys) {
-        require(actors.length == keys.length, "actors/keys mismatch");
+    constructor(BlendToken _token, address _minter, address[] memory actors_, uint256[] memory keys) {
+        require(actors_.length == keys.length, "actors/keys mismatch");
         token = _token;
         minter = _minter;
-        actorsList = actors;
+        actorsList = actors_;
 
-        for (uint256 i = 0; i < actors.length; i++) {
-            pkOf[actors[i]] = keys[i];
-            expectedBalance[actors[i]] = token.balanceOf(actors[i]);
+        for (uint256 i = 0; i < actors_.length; i++) {
+            pkOf[actors_[i]] = keys[i];
+            expectedBalance[actors_[i]] = token.balanceOf(actors_[i]);
         }
     }
 
