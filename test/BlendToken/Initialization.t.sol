@@ -80,7 +80,7 @@ contract BlendTokenInitializationTest is Test {
     function test_initialize_capZero_reverts() public {
         address deployer = makeAddr("deployer");
         BlendToken implementation = new BlendToken();
-        vm.expectRevert(abi.encodeWithSelector(BlendToken.CapExceeded.selector, 0, 0));
+        vm.expectRevert(BlendToken.InvalidCap.selector);
         _deployProxy(implementation, "Fluent", "BLEND", 0, 0, address(0), deployer);
     }
 

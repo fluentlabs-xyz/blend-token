@@ -46,6 +46,8 @@ contract BlendToken is
 
     /// @dev Selector: 0xf480e285 — "CapExceeded(uint256,uint256)"
     error CapExceeded(uint256 cap, uint256 attemptedSupply);
+    /// @dev Selector: 0xcadd5a68 — "InvalidCap()"
+    error InvalidCap();
     /// @dev Selector: 0xa24a13a6 — "ArrayLengthMismatch()"
     error ArrayLengthMismatch();
     /// @dev Selector: 0xd92e233d — "ZeroAddress()"
@@ -72,7 +74,7 @@ contract BlendToken is
         address initialRecipient_,
         address admin_
     ) public initializer {
-        if (cap_ == 0) revert CapExceeded(0, 0);
+        if (cap_ == 0) revert InvalidCap();
         if (admin_ == address(0)) revert ZeroAddress();
 
         __ERC20_init(name_, symbol_);
