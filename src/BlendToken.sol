@@ -42,7 +42,7 @@ contract BlendToken is
     uint256 private _mintedTotal;
 
     /// @dev Storage gap for future upgrades.
-    uint256[47] private __gap;
+    uint256[49] private __gap;
 
     /// @dev Selector: 0xf480e285 — "CapExceeded(uint256,uint256)"
     error CapExceeded(uint256 cap, uint256 attemptedSupply);
