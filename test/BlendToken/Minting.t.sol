@@ -19,6 +19,7 @@ contract BlendTokenMintingTest is BlendTokenBase {
 
         assertEq(token.balanceOf(alice), amount);
         assertEq(token.totalSupply(), INITIAL_SUPPLY + amount);
+        assertEq(token.mintedTotal(), INITIAL_SUPPLY + amount);
     }
 
     function test_mintBatch_mintsAllRecipients() public {
@@ -36,13 +37,15 @@ contract BlendTokenMintingTest is BlendTokenBase {
         assertEq(token.balanceOf(alice), 100 * UNIT);
         assertEq(token.balanceOf(bob), 200 * UNIT);
         assertEq(token.totalSupply(), INITIAL_SUPPLY + 300 * UNIT);
+        assertEq(token.mintedTotal(), INITIAL_SUPPLY + 300 * UNIT);
     }
 
     function test_mint_upToCap_succeeds() public {
-        uint256 remaining = token.cap() - token.totalSupply();
+        uint256 remaining = token.cap() - token.mintedTotal();
         vm.prank(minter);
         token.mint(alice, remaining);
         assertEq(token.totalSupply(), token.cap());
+        assertEq(token.mintedTotal(), token.cap());
     }
 
     function test_nonMinter_mint_reverts() public {
@@ -98,18 +101,18 @@ contract BlendTokenMintingTest is BlendTokenBase {
     }
 
     function test_mint_overCap_reverts() public {
-        uint256 remaining = token.cap() - token.totalSupply();
+        uint256 remaining = token.cap() - token.mintedTotal();
         uint256 amount = remaining + 1;
         uint256 cap = token.cap();
-        uint256 attemptedSupply = token.totalSupply() + amount;
+        uint256 attemptedMinted = token.mintedTotal() + amount;
 
         vm.prank(minter);
-        vm.expectRevert(abi.encodeWithSelector(BlendToken.CapExceeded.selector, cap, attemptedSupply));
+        vm.expectRevert(abi.encodeWithSelector(BlendToken.CapExceeded.selector, cap, attemptedMinted));
         token.mint(alice, amount);
     }
 
     function test_mintBatch_overCap_reverts() public {
-        uint256 remaining = token.cap() - token.totalSupply();
+        uint256 remaining = token.cap() - token.mintedTotal();
         address[] memory recipients = new address[](2);
         recipients[0] = alice;
         recipients[1] = bob;
@@ -119,15 +122,16 @@ contract BlendTokenMintingTest is BlendTokenBase {
         amounts[1] = 1;
 
         uint256 cap = token.cap();
-        uint256 attemptedSupply = token.totalSupply() + remaining + 1;
+        uint256 attemptedMinted = token.mintedTotal() + remaining + 1;
 
         vm.prank(minter);
-        vm.expectRevert(abi.encodeWithSelector(BlendToken.CapExceeded.selector, cap, attemptedSupply));
+        vm.expectRevert(abi.encodeWithSelector(BlendToken.CapExceeded.selector, cap, attemptedMinted));
         token.mintBatch(recipients, amounts);
     }
 
     function test_burn_reducesSupplyAndBalance() public {
         uint256 amount = 10 * UNIT;
+        uint256 mintedTotalBefore = token.mintedTotal();
 
         vm.prank(deployer);
         vm.expectEmit(true, true, true, true);
@@ -136,11 +140,13 @@ contract BlendTokenMintingTest is BlendTokenBase {
 
         assertEq(token.balanceOf(deployer), INITIAL_SUPPLY - amount);
         assertEq(token.totalSupply(), INITIAL_SUPPLY - amount);
+        assertEq(token.mintedTotal(), mintedTotalBefore);
     }
 
     function test_burnFrom_spendsAllowanceAndBurns() public {
         uint256 amount = 25 * UNIT;
         _mintTo(alice, amount);
+        uint256 mintedTotalBefore = token.mintedTotal();
 
         vm.prank(alice);
         token.approve(bob, amount);
@@ -152,6 +158,7 @@ contract BlendTokenMintingTest is BlendTokenBase {
 
         assertEq(token.allowance(alice, bob), 0);
         assertEq(token.balanceOf(alice), 0);
+        assertEq(token.mintedTotal(), mintedTotalBefore);
     }
 
     function test_burnFrom_withoutAllowance_reverts() public {
@@ -161,5 +168,18 @@ contract BlendTokenMintingTest is BlendTokenBase {
         vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InsufficientAllowance.selector, bob, 0, amount));
         token.burnFrom(alice, amount);
+    }
+
+    function test_burn_doesNotRestoreMintCapacity() public {
+        uint256 remaining = token.cap() - token.mintedTotal();
+        vm.prank(minter);
+        token.mint(alice, remaining);
+
+        vm.prank(alice);
+        token.burn(1);
+
+        vm.expectRevert(abi.encodeWithSelector(BlendToken.CapExceeded.selector, token.cap(), token.cap() + 1));
+        vm.prank(minter);
+        token.mint(bob, 1);
     }
 }

@@ -46,18 +46,26 @@ contract BlendTokenInvariantTest is StdInvariant, Test {
         excludeSender(address(0));
     }
 
-    function invariant_totalSupply_capped() public {
+    function invariant_totalSupply_capped() public view {
         assertLe(token.totalSupply(), token.cap());
     }
 
-    function invariant_authorizationState_monotonic() public {
+    function invariant_mintedTotal_capped() public view {
+        assertLe(token.mintedTotal(), token.cap());
+    }
+
+    function invariant_totalSupply_notAboveMinted() public view {
+        assertLe(token.totalSupply(), token.mintedTotal());
+    }
+
+    function invariant_authorizationState_monotonic() public view {
         (address[] memory authors, bytes32[] memory nonces) = handler.usedAuthorizations();
         for (uint256 i = 0; i < nonces.length; i++) {
             assertTrue(token.authorizationState(authors[i], nonces[i]));
         }
     }
 
-    function invariant_balances_match_handler() public {
+    function invariant_balances_match_handler() public view {
         uint256 count = handler.actorsLength();
         for (uint256 i = 0; i < count; i++) {
             address actor = handler.actors(i);
@@ -65,7 +73,7 @@ contract BlendTokenInvariantTest is StdInvariant, Test {
         }
     }
 
-    function invariant_allowances_match_handler() public {
+    function invariant_allowances_match_handler() public view {
         uint256 count = handler.actorsLength();
         for (uint256 i = 0; i < count; i++) {
             address owner = handler.actors(i);
@@ -102,15 +110,15 @@ contract BlendTokenHandler {
     address[] internal usedAuthors;
     bytes32[] internal usedNonces;
 
-    constructor(BlendToken _token, address _minter, address[] memory actors, uint256[] memory keys) {
-        require(actors.length == keys.length, "actors/keys mismatch");
+    constructor(BlendToken _token, address _minter, address[] memory actors_, uint256[] memory keys) {
+        require(actors_.length == keys.length, "actors/keys mismatch");
         token = _token;
         minter = _minter;
-        actorsList = actors;
+        actorsList = actors_;
 
-        for (uint256 i = 0; i < actors.length; i++) {
-            pkOf[actors[i]] = keys[i];
-            expectedBalance[actors[i]] = token.balanceOf(actors[i]);
+        for (uint256 i = 0; i < actors_.length; i++) {
+            pkOf[actors_[i]] = keys[i];
+            expectedBalance[actors_[i]] = token.balanceOf(actors_[i]);
         }
     }
 
@@ -128,7 +136,7 @@ contract BlendTokenHandler {
 
     function mint(uint256 toSeed, uint256 rawAmount) external {
         address to = _actor(toSeed);
-        uint256 available = token.cap() - token.totalSupply();
+        uint256 available = token.cap() - token.mintedTotal();
         if (available == 0) return;
 
         uint256 amount = rawAmount % (available + 1);
@@ -140,7 +148,7 @@ contract BlendTokenHandler {
     function mintBatch(uint256 toSeedA, uint256 toSeedB, uint256 rawAmountA, uint256 rawAmountB) external {
         address toA = _actor(toSeedA);
         address toB = _actor(toSeedB);
-        uint256 available = token.cap() - token.totalSupply();
+        uint256 available = token.cap() - token.mintedTotal();
         if (available == 0) return;
 
         uint256 amountA = rawAmountA % (available + 1);

@@ -92,7 +92,7 @@ abstract contract EIP3009Upgradeable is Initializable, IEIP3009 {
         bytes32 r,
         bytes32 s
     ) external virtual {
-        if (to != msg.sender) revert InvalidPayee(msg.sender, to);
+        if (to != msg.sender) revert InvalidPayee(to, msg.sender);
         _requireValidAuthorization(from, nonce, validAfter, validBefore);
         _requireValidSignature(
             from,

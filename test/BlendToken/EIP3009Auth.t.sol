@@ -246,7 +246,7 @@ contract BlendTokenEIP3009AuthTest is BlendTokenBase {
             _signReceiveWithAuthorization(alicePk, alice, bob, amount, validAfter, validBefore, nonce);
 
         vm.prank(relayer);
-        vm.expectRevert(abi.encodeWithSelector(EIP3009Upgradeable.InvalidPayee.selector, relayer, bob));
+        vm.expectRevert(abi.encodeWithSelector(EIP3009Upgradeable.InvalidPayee.selector, bob, relayer));
         token.receiveWithAuthorization(alice, bob, amount, validAfter, validBefore, nonce, v, r, s);
     }
 
